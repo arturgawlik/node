@@ -61,8 +61,7 @@ maglev_enabled_architectures = ('x64', 'arm', 'arm64')
 shareable_builtins = {'cjs_module_lexer/lexer': 'deps/cjs-module-lexer/lexer.js',
                      'cjs_module_lexer/dist/lexer': 'deps/cjs-module-lexer/dist/lexer.js',
                      'undici/undici': 'deps/undici/undici.js',
-                     'amaro/dist/index': 'deps/amaro/dist/index.js',
-                     'es_module_lexer/lexer': 'deps/es-module-lexer/lexer.js',
+                     'amaro/dist/index': 'deps/amaro/dist/index.js'
 }
 
 # create option groups
