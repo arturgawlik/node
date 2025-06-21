@@ -39,6 +39,14 @@ test('input validation', async (t) => {
       });
     }, { code: 'ERR_INVALID_ARG_TYPE' });
   });
+
+  await t.test('throws if preserveOthers is not an boolean', async (t) => {
+    assert.throws(() => {
+      t.mock.module(__filename, {
+        preserveOthers: null,
+      });
+    }, { code: 'ERR_INVALID_ARG_TYPE' });
+  });
 });
 
 test('core module mocking with namedExports option', async (t) => {
