@@ -1,4 +1,4 @@
-// Flags: --experimental-test-module-mocks --experimental-require-module 
+// Flags: --experimental-test-module-mocks --experimental-require-module
 'use strict';
 const common = require('../common');
 const { isMainThread } = require('worker_threads');
@@ -18,14 +18,17 @@ const { pathToFileURL } = require('node:url');
 test('mocking with preserveOthers option', async (t) => {
   await t.test('ESM loader mocking ESM module', async (t) => {
     const basicEsmFixture = fixtures.fileURL('module-mocking', 'basic-esm.mjs');
-    const basicEsmDefaultFixture = fixtures.fileURL('module-mocking', 'basic-esm-default.mjs');
+    const basicEsmDefaultFixture = fixtures.fileURL(
+      'module-mocking',
+      'basic-esm-default.mjs'
+    );
     const originalEsmString = 'original esm string';
     const originalEsmStringDefault = 'original esm string default';
 
     await t.test('coexisting original and mocked exports', async (t) => {
       await t.test('preserves original module exports', async (t) => {
         t.mock.module(basicEsmFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicEsmFixture);
 
@@ -34,46 +37,52 @@ test('mocking with preserveOthers option', async (t) => {
 
       await t.test('preserves original module default exports', async (t) => {
         t.mock.module(basicEsmDefaultFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicEsmDefaultFixture);
 
         assert.strictEqual(mocked.default, originalEsmStringDefault);
       });
 
-      await t.test('preserves original module exports with additional named exports', async (t) => {
-        t.mock.module(basicEsmFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = await import(basicEsmFixture);
+      await t.test(
+        'preserves original module exports with additional named exports',
+        async (t) => {
+          t.mock.module(basicEsmFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = await import(basicEsmFixture);
 
-        assert.strictEqual(mocked.string, originalEsmString);
-        assert.strictEqual(mocked.fn(), 42);
-      });
+          assert.strictEqual(mocked.string, originalEsmString);
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
 
-      await t.test('preserves original module default export with additional named exports', async (t) => {
-        t.mock.module(basicEsmDefaultFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = await import(basicEsmDefaultFixture);
-        assert.strictEqual(mocked.default, originalEsmStringDefault);
-        assert.strictEqual(mocked.fn(), 42);
-      });
+      await t.test(
+        'preserves original module default export with additional named exports',
+        async (t) => {
+          t.mock.module(basicEsmDefaultFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = await import(basicEsmDefaultFixture);
+          assert.strictEqual(mocked.default, originalEsmStringDefault);
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
     });
 
     await t.test('overriding original exports', async (t) => {
       await t.test('override original module export', async (t) => {
         t.mock.module(basicEsmFixture, {
           namedExports: {
-            string: 'mocked esm string'
+            string: 'mocked esm string',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicEsmFixture);
 
@@ -83,7 +92,7 @@ test('mocking with preserveOthers option', async (t) => {
       await t.test('override original default module export', async (t) => {
         t.mock.module(basicEsmDefaultFixture, {
           defaultExport: 'mocked esm string default',
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicEsmDefaultFixture);
 
@@ -94,14 +103,17 @@ test('mocking with preserveOthers option', async (t) => {
 
   await t.test('ESM loader mocking CJS module', async (t) => {
     const basicCjsFixture = fixtures.fileURL('module-mocking', 'basic-cjs.js');
-    const basicCjsDefaultFixture = fixtures.fileURL('module-mocking', 'basic-cjs-default.js');
+    const basicCjsDefaultFixture = fixtures.fileURL(
+      'module-mocking',
+      'basic-cjs-default.js'
+    );
     const originalCjsString = 'original cjs string';
     const originalCjsStringDefault = 'original cjs string default';
 
     await t.test('coexisting original and mocked exports', async (t) => {
       await t.test('preserves original module exports', async (t) => {
         t.mock.module(basicCjsFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicCjsFixture);
 
@@ -110,46 +122,52 @@ test('mocking with preserveOthers option', async (t) => {
 
       await t.test('preserves original module default exports', async (t) => {
         t.mock.module(basicCjsDefaultFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicCjsDefaultFixture);
 
         assert.strictEqual(mocked.default.msg, originalCjsStringDefault);
       });
 
-      await t.test('preserves original module exports with additional named exports', async (t) => {
-        t.mock.module(basicCjsFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = await import(basicCjsFixture);
+      await t.test(
+        'preserves original module exports with additional named exports',
+        async (t) => {
+          t.mock.module(basicCjsFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = await import(basicCjsFixture);
 
-        assert.strictEqual(mocked.default.string, originalCjsString);
-        assert.strictEqual(mocked.default.fn(), 42);
-      });
+          assert.strictEqual(mocked.default.string, originalCjsString);
+          assert.strictEqual(mocked.default.fn(), 42);
+        }
+      );
 
-      await t.test('preserves original module default export with additional named exports', async (t) => {
-        t.mock.module(basicCjsDefaultFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = await import(basicCjsDefaultFixture);
-        assert.strictEqual(mocked.default.msg, originalCjsStringDefault);
-        assert.strictEqual(mocked.default.fn(), 42);
-      });
+      await t.test(
+        'preserves original module default export with additional named exports',
+        async (t) => {
+          t.mock.module(basicCjsDefaultFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = await import(basicCjsDefaultFixture);
+          assert.strictEqual(mocked.default.msg, originalCjsStringDefault);
+          assert.strictEqual(mocked.default.fn(), 42);
+        }
+      );
     });
 
     await t.test('overriding original exports', async (t) => {
       await t.test('override original module export', async (t) => {
         t.mock.module(basicCjsFixture, {
           namedExports: {
-            string: 'mocked cjs string'
+            string: 'mocked cjs string',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicCjsFixture);
 
@@ -159,7 +177,7 @@ test('mocking with preserveOthers option', async (t) => {
       await t.test('override original default module export', async (t) => {
         t.mock.module(basicCjsDefaultFixture, {
           defaultExport: 'mocked cjs string default',
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = await import(basicCjsDefaultFixture);
 
@@ -170,14 +188,17 @@ test('mocking with preserveOthers option', async (t) => {
 
   await t.test('CJS loader mocking CJS module', async (t) => {
     const basicCjsFixture = fixtures.path('module-mocking', 'basic-cjs.js');
-    const basicCjsDefaultFixture = fixtures.path('module-mocking', 'basic-cjs-default.js');
+    const basicCjsDefaultFixture = fixtures.path(
+      'module-mocking',
+      'basic-cjs-default.js'
+    );
     const originalCjsString = 'original cjs string';
     const originalCjsStringDefault = 'original cjs string default';
 
     t.test('coexisting original and mocked exports', (t) => {
       t.test('preserves original module exports', (t) => {
         t.mock.module(basicCjsFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicCjsFixture);
 
@@ -186,41 +207,47 @@ test('mocking with preserveOthers option', async (t) => {
 
       t.test('preserves original module default exports', (t) => {
         t.mock.module(basicCjsDefaultFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicCjsDefaultFixture);
 
         assert.deepStrictEqual(mocked, {
-          msg: originalCjsStringDefault
+          msg: originalCjsStringDefault,
         });
       });
 
-      t.test('preserves original module exports with additional named exports', (t) => {
-        t.mock.module(basicCjsFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = require(basicCjsFixture);
+      t.test(
+        'preserves original module exports with additional named exports',
+        (t) => {
+          t.mock.module(basicCjsFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = require(basicCjsFixture);
 
-        assert.strictEqual(mocked.string, originalCjsString);
-        assert.strictEqual(mocked.fn(), 42);
-      });
+          assert.strictEqual(mocked.string, originalCjsString);
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
 
-      t.test('preserves original module default export with additional named exports', async (t) => {
-        t.mock.module(basicCjsDefaultFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = require(basicCjsDefaultFixture);
-        assert.partialDeepStrictEqual(mocked, {
-          msg: originalCjsStringDefault
-        });
-        assert.strictEqual(mocked.fn(), 42);
-      });
+      t.test(
+        'preserves original module default export with additional named exports',
+        async (t) => {
+          t.mock.module(basicCjsDefaultFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = require(basicCjsDefaultFixture);
+          assert.partialDeepStrictEqual(mocked, {
+            msg: originalCjsStringDefault,
+          });
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
     });
 
     t.test('overriding original exports', (t) => {
@@ -228,9 +255,9 @@ test('mocking with preserveOthers option', async (t) => {
         const fixture = fixtures.path('module-mocking', 'basic-cjs.js');
         t.mock.module(basicCjsFixture, {
           namedExports: {
-            string: 'mocked cjs string'
+            string: 'mocked cjs string',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicCjsFixture);
 
@@ -240,14 +267,14 @@ test('mocking with preserveOthers option', async (t) => {
       t.test('override original default module export', (t) => {
         t.mock.module(basicCjsDefaultFixture, {
           defaultExport: {
-            msg: 'mocked cjs string default'
+            msg: 'mocked cjs string default',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicCjsDefaultFixture);
 
         assert.deepStrictEqual(mocked, {
-          msg: 'mocked cjs string default'
+          msg: 'mocked cjs string default',
         });
       });
     });
@@ -255,14 +282,17 @@ test('mocking with preserveOthers option', async (t) => {
 
   await t.test('CJS loader mocking ESM module', async (t) => {
     const basicEsmFixture = fixtures.path('module-mocking', 'basic-esm.mjs');
-    const basicEsmDefaultFixture = fixtures.path('module-mocking', 'basic-esm-default.mjs');
+    const basicEsmDefaultFixture = fixtures.path(
+      'module-mocking',
+      'basic-esm-default.mjs'
+    );
     const originalEsmString = 'original esm string';
     const originalEsmStringDefault = 'original esm string default';
 
     t.test('coexisting original and mocked exports', (t) => {
       t.test('preserves original module exports', (t) => {
         t.mock.module(basicEsmFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicEsmFixture);
 
@@ -271,51 +301,57 @@ test('mocking with preserveOthers option', async (t) => {
 
       t.test('preserves original module default exports', (t) => {
         t.mock.module(basicEsmDefaultFixture, {
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicEsmDefaultFixture);
 
         assert.deepStrictEqual(mocked, {
           __esModule: true,
-          default: originalEsmStringDefault
+          default: originalEsmStringDefault,
         });
       });
 
-      t.test('preserves original module exports with additional named exports', (t) => {
-        t.mock.module(basicEsmFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = require(basicEsmFixture);
+      t.test(
+        'preserves original module exports with additional named exports',
+        (t) => {
+          t.mock.module(basicEsmFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = require(basicEsmFixture);
 
-        assert.strictEqual(mocked.string, originalEsmString);
-        assert.strictEqual(mocked.fn(), 42);
-      });
+          assert.strictEqual(mocked.string, originalEsmString);
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
 
-      t.test('preserves original module default export with additional named exports', async (t) => {
-        t.mock.module(basicEsmDefaultFixture, {
-          namedExports: {
-            fn: () => 42
-          },
-          preserveOthers: true
-        });
-        const mocked = require(basicEsmDefaultFixture);
-        assert.partialDeepStrictEqual(mocked, {
-          default: originalEsmStringDefault
-        });
-        assert.strictEqual(mocked.fn(), 42);
-      });
+      t.test(
+        'preserves original module default export with additional named exports',
+        async (t) => {
+          t.mock.module(basicEsmDefaultFixture, {
+            namedExports: {
+              fn: () => 42,
+            },
+            preserveOthers: true,
+          });
+          const mocked = require(basicEsmDefaultFixture);
+          assert.partialDeepStrictEqual(mocked, {
+            default: originalEsmStringDefault,
+          });
+          assert.strictEqual(mocked.fn(), 42);
+        }
+      );
     });
 
     t.test('overriding original exports', (t) => {
       t.test('override original module export', (t) => {
         t.mock.module(basicEsmFixture, {
           namedExports: {
-            string: 'mocked esm string'
+            string: 'mocked esm string',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicEsmFixture);
 
@@ -325,14 +361,14 @@ test('mocking with preserveOthers option', async (t) => {
       t.test('override original default module export', (t) => {
         t.mock.module(basicEsmDefaultFixture, {
           defaultExport: {
-            msg: 'mocked esm string default'
+            msg: 'mocked esm string default',
           },
-          preserveOthers: true
+          preserveOthers: true,
         });
         const mocked = require(basicEsmDefaultFixture);
 
         assert.deepStrictEqual(mocked, {
-          msg: 'mocked esm string default'
+          msg: 'mocked esm string default',
         });
       });
     });

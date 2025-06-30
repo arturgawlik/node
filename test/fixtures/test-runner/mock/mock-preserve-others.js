@@ -5,8 +5,12 @@ const { test } = require('node:test');
 test.skip('mock with "preserveOthers" flag for esm', async (t) => {
   const fixtureEsmPath = `./example-modules/example-module-to-mock.mjs`;
   const mockEsm = t.mock.module(fixtureEsmPath, {
-    namedExports: { fn1() { return 'fake-implementation-fn1' } },
-    preserveOthers: true
+    namedExports: {
+      fn1() {
+        return 'fake-implementation-fn1';
+      },
+    },
+    preserveOthers: true,
   });
   let esmImpl = await import(fixtureEsmPath);
 
@@ -24,8 +28,12 @@ test.skip('mock with "preserveOthers" flag for esm', async (t) => {
 
 test('mock with "preserveOthers" flag for cjs', (t) => {
   const mockCjs = t.mock.module(fixtureCjsPath, {
-    namedExports: { fn1() { return 'fake-implementation-fn1' } },
-    preserveOthers: true
+    namedExports: {
+      fn1() {
+        return 'fake-implementation-fn1';
+      },
+    },
+    preserveOthers: true,
   });
   let cjsImpl = require(fixtureCjsPath);
 
@@ -40,4 +48,3 @@ test('mock with "preserveOthers" flag for cjs', (t) => {
   assert.strictEqual(cjsImpl.fn2(), 'original-implementation-fn2');
   assert.strictEqual(cjsImpl.default(), 'original-implementation-default');
 });
-
