@@ -48,7 +48,7 @@ By default, pipes for `stdin`, `stdout`, and `stderr` are established between
 the parent Node.js process and the spawned subprocess. These pipes have
 limited (and platform-specific) capacity. If the subprocess writes to
 stdout in excess of that limit without the output being captured, the
-subprocess blocks waiting for the pipe buffer to accept more data. This is
+subprocess blocks, waiting for the pipe buffer to accept more data. This is
 identical to the behavior of pipes in the shell. Use the `{ stdio: 'ignore' }`
 option if the output will not be consumed.
 
@@ -1774,7 +1774,7 @@ added:
  - v20.5.0
  - v18.18.0
 changes:
- - version: REPLACEME
+ - version: v24.2.0
    pr-url: https://github.com/nodejs/node/pull/58467
    description: No longer experimental.
 -->

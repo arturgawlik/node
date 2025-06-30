@@ -1253,6 +1253,28 @@ Emitted when a stream is created on the server.
 
 Emitted when a stream is started on the server.
 
+`http2.server.stream.error`
+
+* `stream` {ServerHttp2Stream}
+* `error` {Error}
+
+Emitted when an error occurs during the processing of a stream on the server.
+
+`http2.server.stream.finish`
+
+* `stream` {ServerHttp2Stream}
+* `headers` {HTTP/2 Headers Object}
+* `flags` {number}
+
+Emitted when a stream is sent on the server.
+
+`http2.server.stream.close`
+
+* `stream` {ServerHttp2Stream}
+
+Emitted when a stream is closed on the server. The HTTP/2 error code used when
+closing the stream can be retrieved using the `stream.rstCode` property.
+
 #### Modules
 
 > Stability: 1 - Experimental

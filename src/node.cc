@@ -760,17 +760,16 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
 
   // TODO(aduh95): remove this when the harmony-import-attributes flag
   // is removed in V8.
-  if (std::find(v8_args.begin(),
-                v8_args.end(),
-                "--no-harmony-import-attributes") == v8_args.end()) {
+  if (std::ranges::find(v8_args, "--no-harmony-import-attributes") ==
+      v8_args.end()) {
     v8_args.emplace_back("--harmony-import-attributes");
   }
 
   auto env_opts = per_process::cli_options->per_isolate->per_env;
-  if (std::find(v8_args.begin(), v8_args.end(),
-                "--abort-on-uncaught-exception") != v8_args.end() ||
-      std::find(v8_args.begin(), v8_args.end(),
-                "--abort_on_uncaught_exception") != v8_args.end()) {
+  if (std::ranges::find(v8_args, "--abort-on-uncaught-exception") !=
+          v8_args.end() ||
+      std::ranges::find(v8_args, "--abort_on_uncaught_exception") !=
+          v8_args.end()) {
     env_opts->abort_on_uncaught_exception = true;
   }
 
@@ -782,7 +781,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
   // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the
   // performance penalty of frequent EINTR wakeups when the profiler is running.
   // Only do this for v8.log profiling, as it breaks v8::CpuProfiler users.
-  if (std::find(v8_args.begin(), v8_args.end(), "--prof") != v8_args.end()) {
+  if (std::ranges::find(v8_args, "--prof") != v8_args.end()) {
     uv_loop_configure(uv_default_loop(), UV_LOOP_BLOCK_SIGNAL, SIGPROF);
   }
 #endif
@@ -910,7 +909,7 @@ static ExitCode InitializeNodeWithArgsInternal(
       default:
         UNREACHABLE();
     }
-    node_options_from_config = per_process::config_reader.AssignNodeOptions();
+    node_options_from_config = per_process::config_reader.GetNodeOptions();
     // (@marco-ippolito) Avoid reparsing the env options again
     std::vector<std::string> env_argv_from_config =
         ParseNodeOptionsEnvVar(node_options_from_config, errors);
@@ -956,7 +955,19 @@ static ExitCode InitializeNodeWithArgsInternal(
 #endif
 
   if (!(flags & ProcessInitializationFlags::kDisableCLIOptions)) {
-    const ExitCode exit_code =
+    // Parse the options coming from the config file.
+    // This is done before parsing the command line options
+    // as the cli flags are expected to override the config file ones.
+    std::vector<std::string> extra_argv =
+        per_process::config_reader.GetNamespaceFlags();
+    // [0] is expected to be the program name, fill it in from the real argv.
+    extra_argv.insert(extra_argv.begin(), argv->at(0));
+    // Parse the extra argv coming from the config file
+    ExitCode exit_code = ProcessGlobalArgsInternal(
+        &extra_argv, nullptr, errors, kDisallowedInEnvvar);
+    if (exit_code != ExitCode::kNoFailure) return exit_code;
+    // Parse options coming from the command line.
+    exit_code =
         ProcessGlobalArgsInternal(argv, exec_argv, errors, kDisallowedInEnvvar);
     if (exit_code != ExitCode::kNoFailure) return exit_code;
   }

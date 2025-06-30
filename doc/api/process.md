@@ -176,95 +176,6 @@ process, the `message` argument can contain data that JSON is not able
 to represent.
 See [Advanced serialization for `child_process`][] for more details.
 
-### Event: `'multipleResolves'`
-
-<!-- YAML
-added: v10.12.0
-deprecated:
-  - v17.6.0
-  - v16.15.0
--->
-
-> Stability: 0 - Deprecated
-
-* `type` {string} The resolution type. One of `'resolve'` or `'reject'`.
-* `promise` {Promise} The promise that resolved or rejected more than once.
-* `value` {any} The value with which the promise was either resolved or
-  rejected after the original resolve.
-
-The `'multipleResolves'` event is emitted whenever a `Promise` has been either:
-
-* Resolved more than once.
-* Rejected more than once.
-* Rejected after resolve.
-* Resolved after reject.
-
-This is useful for tracking potential errors in an application while using the
-`Promise` constructor, as multiple resolutions are silently swallowed. However,
-the occurrence of this event does not necessarily indicate an error. For
-example, [`Promise.race()`][] can trigger a `'multipleResolves'` event.
-
-Because of the unreliability of the event in cases like the
-[`Promise.race()`][] example above it has been deprecated.
-
-```mjs
-import process from 'node:process';
-
-process.on('multipleResolves', (type, promise, reason) => {
-  console.error(type, promise, reason);
-  setImmediate(() => process.exit(1));
-});
-
-async function main() {
-  try {
-    return await new Promise((resolve, reject) => {
-      resolve('First call');
-      resolve('Swallowed resolve');
-      reject(new Error('Swallowed reject'));
-    });
-  } catch {
-    throw new Error('Failed');
-  }
-}
-
-main().then(console.log);
-// resolve: Promise { 'First call' } 'Swallowed resolve'
-// reject: Promise { 'First call' } Error: Swallowed reject
-//     at Promise (*)
-//     at new Promise (<anonymous>)
-//     at main (*)
-// First call
-```
-
-```cjs
-const process = require('node:process');
-
-process.on('multipleResolves', (type, promise, reason) => {
-  console.error(type, promise, reason);
-  setImmediate(() => process.exit(1));
-});
-
-async function main() {
-  try {
-    return await new Promise((resolve, reject) => {
-      resolve('First call');
-      resolve('Swallowed resolve');
-      reject(new Error('Swallowed reject'));
-    });
-  } catch {
-    throw new Error('Failed');
-  }
-}
-
-main().then(console.log);
-// resolve: Promise { 'First call' } 'Swallowed resolve'
-// reject: Promise { 'First call' } Error: Swallowed reject
-//     at Promise (*)
-//     at new Promise (<anonymous>)
-//     at main (*)
-// First call
-```
-
 ### Event: `'rejectionHandled'`
 
 <!-- YAML
@@ -4075,7 +3986,7 @@ added:
 
 * `val` {boolean}
 
-This function enables or disables the [Source Map v3][Source Map] support for
+This function enables or disables the [Source Map][] support for
 stack traces.
 
 It provides same features as launching Node.js process with commandline options
@@ -4126,7 +4037,7 @@ added:
 * {boolean}
 
 The `process.sourceMapsEnabled` property returns whether the
-[Source Map v3][Source Map] support for stack traces is enabled.
+[Source Map][] support for stack traces is enabled.
 
 ## `process.stderr`
 
@@ -4586,7 +4497,7 @@ cases:
 [Permission Model]: permissions.md#permission-model
 [Readable]: stream.md#readable-streams
 [Signal Events]: #signal-events
-[Source Map]: https://sourcemaps.info/spec.html
+[Source Map]: https://tc39.es/ecma426/
 [Stream compatibility]: stream.md#compatibility-with-older-nodejs-versions
 [TTY]: tty.md#tty
 [Writable]: stream.md#writable-streams
@@ -4603,7 +4514,6 @@ cases:
 [`Error`]: errors.md#class-error
 [`EventEmitter`]: events.md#class-eventemitter
 [`NODE_OPTIONS`]: cli.md#node_optionsoptions
-[`Promise.race()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race
 [`Worker`]: worker_threads.md#class-worker
 [`Worker` constructor]: worker_threads.md#new-workerfilename-options
 [`console.error()`]: console.md#consoleerrordata-args

@@ -1274,7 +1274,9 @@ added:
   - v18.1.0
   - v16.17.0
 changes:
- - version: v24.0.0
+ - version:
+    - v24.0.0
+    - v22.17.0
    pr-url: https://github.com/nodejs/node/pull/57513
    description: Marking the API stable.
 -->
@@ -1866,7 +1868,7 @@ active handle in the event system. If the worker is already `unref()`ed calling
 ### `worker[Symbol.asyncDispose]()`
 
 <!-- YAML
-added: REPLACEME
+added: v24.2.0
 -->
 
 Calls [`worker.terminate()`][] when the dispose scope is exited.

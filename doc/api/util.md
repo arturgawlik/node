@@ -2408,7 +2408,9 @@ added:
   - v21.7.0
   - v20.12.0
 changes:
-  - version: REPLACEME
+  - version:
+      - v24.2.0
+      - v22.17.0
     pr-url: https://github.com/nodejs/node/pull/58437
     description: Added the `'none'` format as a non-op format.
   - version:
@@ -3328,7 +3330,13 @@ util.types.isModuleNamespaceObject(ns);  // Returns true
 
 <!-- YAML
 added: v10.0.0
+deprecated: v24.2.0
 -->
+
+> Stability: 0 - Deprecated: Use [`Error.isError`][] instead.
+
+**Note:** As of Node.js v24, `Error.isError()` is currently slower than `util.types.isNativeError()`.
+If performance is critical, consider benchmarking both in your environment.
 
 * `value` {any}
 * Returns: {boolean}
@@ -3716,6 +3724,7 @@ util.isArray({});
 [`'warning'`]: process.md#event-warning
 [`Array.isArray()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 [`ArrayBuffer.isView()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView
+[`Error.isError`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/isError
 [`JSON.stringify()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 [`MIMEparams`]: #class-utilmimeparams
 [`Object.assign()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
