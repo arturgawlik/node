@@ -1,4 +1,5 @@
-const jsDocPrefix = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/';
+const mdnPrefix = 'https://developer.mozilla.org/en-US/docs/Web';
+const jsDocPrefix = `${mdnPrefix}/JavaScript/`;
 
 const jsDataStructuresUrl = `${jsDocPrefix}Data_structures`;
 const jsPrimitives = {
@@ -32,8 +33,7 @@ const customTypesMap = {
   'AbortController': 'globals.html#class-abortcontroller',
   'AbortSignal': 'globals.html#class-abortsignal',
 
-  'ArrayBufferView':
-    'https://developer.mozilla.org/en-US/docs/Web/API/ArrayBufferView',
+  'ArrayBufferView': `${mdnPrefix}/API/ArrayBufferView`,
 
   'AsyncIterator': 'https://tc39.github.io/ecma262/#sec-asynciterator-interface',
 
@@ -46,6 +46,8 @@ const customTypesMap = {
   'bigint': `${jsDocPrefix}Reference/Global_Objects/BigInt`,
   'WebAssembly.Instance':
     `${jsDocPrefix}Reference/Global_Objects/WebAssembly/Instance`,
+  'WebAssembly.Memory':
+    `${jsDocPrefix}Reference/Global_Objects/WebAssembly/Memory`,
 
   'Blob': 'buffer.html#class-blob',
   'File': 'buffer.html#class-file',
@@ -96,7 +98,7 @@ const customTypesMap = {
   'AesCtrParams': 'webcrypto.html#class-aesctrparams',
   'AesCbcParams': 'webcrypto.html#class-aescbcparams',
   'AesDerivedKeyParams': 'webcrypto.html#class-aesderivedkeyparams',
-  'AesGcmParams': 'webcrypto.html#class-aesgcmparams',
+  'AeadParams': 'webcrypto.html#class-aeadparams',
   'EcdhKeyDeriveParams': 'webcrypto.html#class-ecdhkeyderiveparams',
   'HkdfParams': 'webcrypto.html#class-hkdfparams',
   'KeyAlgorithm': 'webcrypto.html#class-keyalgorithm',
@@ -118,6 +120,8 @@ const customTypesMap = {
   'EcdsaParams': 'webcrypto.html#class-ecdsaparams',
   'RsaPssParams': 'webcrypto.html#class-rsapssparams',
   'Ed448Params': 'webcrypto.html#class-ed448params',
+  'ContextParams': 'webcrypto.html#class-contextparams',
+  'CShakeParams': 'webcrypto.html#class-cshakeparams',
 
   'dgram.Socket': 'dgram.html#class-dgramsocket',
 
@@ -136,6 +140,15 @@ const customTypesMap = {
   'Event': 'events.html#class-event',
   'CustomEvent': 'events.html#class-customevent',
   'EventListener': 'events.html#event-listener',
+
+  'CloseEvent': `${mdnPrefix}/API/CloseEvent`,
+  'ErrorEvent': `${mdnPrefix}/API/ErrorEvent`,
+  'EventSource': `${mdnPrefix}/API/EventSource`,
+  'MessageEvent': `${mdnPrefix}/API/MessageEvent`,
+
+  'DOMException': `${mdnPrefix}/API/DOMException`,
+  'Storage': `${mdnPrefix}/API/Storage`,
+  'WebSocket': `${mdnPrefix}/API/WebSocket`,
 
   'FileHandle': 'fs.html#class-filehandle',
   'fs.Dir': 'fs.html#class-fsdir',
@@ -323,6 +336,10 @@ const customTypesMap = {
   'quic.OnHeadersCallback': 'quic.html#callback-onheaderscallback',
   'quic.OnTrailersCallback': 'quic.html#callback-ontrailerscallback',
   'quic.OnPullCallback': 'quic.html#callback-onpullcallback',
+
+  'Lock': 'worker_threads.html#class-lock',
+  'LockManager': 'worker_threads.html#class-lockmanager',
+  'LockManagerSnapshot': 'https://developer.mozilla.org/en-US/docs/Web/API/LockManagerSnapshot',
 };
 
 const arrayPart = /(?:\[])+$/;

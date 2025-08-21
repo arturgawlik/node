@@ -133,7 +133,6 @@ class EnvironmentOptions : public Options {
   std::string localstorage_file;
   bool experimental_global_navigator = true;
   bool experimental_global_web_crypto = true;
-  bool experimental_wasm_modules = false;
   bool experimental_import_meta_resolve = false;
   std::string input_type;  // Value of --input-type
   bool entry_is_url = false;
@@ -175,6 +174,7 @@ class EnvironmentOptions : public Options {
   bool cpu_prof = false;
   bool experimental_network_inspection = false;
   bool experimental_worker_inspection = false;
+  bool experimental_inspector_network_resource = false;
   std::string heap_prof_dir;
   std::string heap_prof_name;
   static const uint64_t kDefaultHeapProfInterval = 512 * 1024;
@@ -198,6 +198,7 @@ class EnvironmentOptions : public Options {
   bool test_runner_update_snapshots = false;
   std::vector<std::string> test_name_pattern;
   std::vector<std::string> test_reporter;
+  std::string test_rerun_failures_path;
   std::vector<std::string> test_reporter_destination;
   std::string test_global_setup_path;
   bool test_only = false;
@@ -242,6 +243,7 @@ class EnvironmentOptions : public Options {
   bool force_repl = false;
 
   bool insecure_http_parser = false;
+  bool use_env_proxy = false;
 
   bool tls_min_v1_0 = false;
   bool tls_min_v1_1 = false;
@@ -285,6 +287,8 @@ class PerIsolateOptions : public Options {
   bool report_uncaught_exception = false;
   bool report_on_signal = false;
   bool experimental_shadow_realm = false;
+  std::string max_old_space_size_percentage;
+  std::string max_old_space_size;
   int64_t stack_trace_limit = 10;
   std::string report_signal = "SIGUSR2";
   bool build_snapshot = false;
@@ -292,6 +296,8 @@ class PerIsolateOptions : public Options {
   inline EnvironmentOptions* get_per_env_options();
   void CheckOptions(std::vector<std::string>* errors,
                     std::vector<std::string>* argv) override;
+  void HandleMaxOldSpaceSizePercentage(std::vector<std::string>* errors,
+                                       std::string* max_old_space_size);
 
   inline std::shared_ptr<PerIsolateOptions> Clone() const;
 
@@ -643,6 +649,8 @@ class OptionsParser {
       std::string namespace_name);
   friend std::vector<std::string> MapAvailableNamespaces();
   friend void GetEnvOptionsInputType(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
+  friend void GetOptionsAsFlags(
       const v8::FunctionCallbackInfo<v8::Value>& args);
 };
 

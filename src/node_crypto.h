@@ -30,6 +30,7 @@
 // code should include the relevant src/crypto headers directly.
 #include "crypto/crypto_aes.h"
 #include "crypto/crypto_bio.h"
+#include "crypto/crypto_chacha20_poly1305.h"
 #include "crypto/crypto_cipher.h"
 #include "crypto/crypto_context.h"
 #include "crypto/crypto_dh.h"
@@ -40,6 +41,7 @@
 #include "crypto/crypto_hmac.h"
 #include "crypto/crypto_keygen.h"
 #include "crypto/crypto_keys.h"
+#include "crypto/crypto_ml_dsa.h"
 #include "crypto/crypto_pbkdf2.h"
 #include "crypto/crypto_random.h"
 #include "crypto/crypto_rsa.h"

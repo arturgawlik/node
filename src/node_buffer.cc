@@ -1061,8 +1061,9 @@ void IndexOfBuffer(const FunctionCallbackInfo<Value>& args) {
 
   enum encoding enc = static_cast<enum encoding>(args[3].As<Int32>()->Value());
 
-  THROW_AND_RETURN_UNLESS_BUFFER(Environment::GetCurrent(args), args[0]);
-  THROW_AND_RETURN_UNLESS_BUFFER(Environment::GetCurrent(args), args[1]);
+  Environment* env = Environment::GetCurrent(args);
+  THROW_AND_RETURN_UNLESS_BUFFER(env, args[0]);
+  THROW_AND_RETURN_UNLESS_BUFFER(env, args[1]);
   ArrayBufferViewContents<char> haystack_contents(args[0]);
   ArrayBufferViewContents<char> needle_contents(args[1]);
   int64_t offset_i64 = args[2].As<Integer>()->Value();
@@ -1525,6 +1526,14 @@ uint32_t FastWriteString(Local<Value> receiver,
                          uint32_t max_length,
                          // NOLINTNEXTLINE(runtime/references)
                          FastApiCallbackOptions& options) {
+  // Just a heads up... this is a v8 fast api function. The use of
+  // FastOneByteString has some caveats. Specifically, a GC occurring
+  // between the time the FastOneByteString is created and the time
+  // we use it below can cause the FastOneByteString to become invalid
+  // and produce garbage data. This is not a problem here because we
+  // are not performing any allocations or other operations that would
+  // trigger a GC before the FastOneByteString is used. Take care when
+  // modifying this code to ensure that no operations would trigger a GC.
   HandleScope handle_scope(options.isolate);
   SPREAD_BUFFER_ARG(dst_obj, dst);
   CHECK(offset <= dst_length);
@@ -1634,20 +1643,16 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(SetBufferPrototype);
 
   registry->Register(SlowByteLengthUtf8);
-  registry->Register(fast_byte_length_utf8.GetTypeInfo());
-  registry->Register(FastByteLengthUtf8);
+  registry->Register(fast_byte_length_utf8);
   registry->Register(SlowCopy);
-  registry->Register(fast_copy.GetTypeInfo());
-  registry->Register(FastCopy);
+  registry->Register(fast_copy);
   registry->Register(Compare);
-  registry->Register(FastCompare);
-  registry->Register(fast_compare.GetTypeInfo());
+  registry->Register(fast_compare);
   registry->Register(CompareOffset);
   registry->Register(Fill);
   registry->Register(IndexOfBuffer);
   registry->Register(SlowIndexOfNumber);
-  registry->Register(FastIndexOfNumber);
-  registry->Register(fast_index_of_number.GetTypeInfo());
+  registry->Register(fast_index_of_number);
   registry->Register(IndexOfString);
 
   registry->Register(Swap16);
@@ -1668,12 +1673,9 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
   registry->Register(SlowWriteString<ASCII>);
   registry->Register(SlowWriteString<LATIN1>);
   registry->Register(SlowWriteString<UTF8>);
-  registry->Register(FastWriteString<ASCII>);
-  registry->Register(fast_write_string_ascii.GetTypeInfo());
-  registry->Register(FastWriteString<LATIN1>);
-  registry->Register(fast_write_string_latin1.GetTypeInfo());
-  registry->Register(FastWriteString<UTF8>);
-  registry->Register(fast_write_string_utf8.GetTypeInfo());
+  registry->Register(fast_write_string_ascii);
+  registry->Register(fast_write_string_latin1);
+  registry->Register(fast_write_string_utf8);
   registry->Register(StringWrite<ASCII>);
   registry->Register(StringWrite<BASE64>);
   registry->Register(StringWrite<BASE64URL>);

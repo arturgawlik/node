@@ -12,6 +12,22 @@
 #if OPENSSL_VERSION_MAJOR >= 3
 #include <openssl/provider.h>
 #endif
+#if OPENSSL_WITH_PQC
+struct PQCMapping {
+  const char* name;
+  int nid;
+};
+
+constexpr static PQCMapping pqc_mappings[] = {
+    {"ML-DSA-44", EVP_PKEY_ML_DSA_44},
+    {"ML-DSA-65", EVP_PKEY_ML_DSA_65},
+    {"ML-DSA-87", EVP_PKEY_ML_DSA_87},
+    {"ML-KEM-512", EVP_PKEY_ML_KEM_512},
+    {"ML-KEM-768", EVP_PKEY_ML_KEM_768},
+    {"ML-KEM-1024", EVP_PKEY_ML_KEM_1024},
+};
+
+#endif
 
 // EVP_PKEY_CTX_set_dsa_paramgen_q_bits was added in OpenSSL 1.1.1e.
 #if OPENSSL_VERSION_NUMBER < 0x1010105fL
@@ -1897,6 +1913,31 @@ EVPKeyPointer EVPKeyPointer::NewRawPrivate(
       EVP_PKEY_new_raw_private_key(id, nullptr, data.data, data.len));
 }
 
+#if OPENSSL_WITH_PQC
+EVPKeyPointer EVPKeyPointer::NewRawSeed(
+    int id, const Buffer<const unsigned char>& data) {
+  if (id == 0) return {};
+
+  OSSL_PARAM params[] = {
+      OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_ML_DSA_SEED,
+                                        const_cast<unsigned char*>(data.data),
+                                        data.len),
+      OSSL_PARAM_END};
+
+  EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(id, nullptr);
+  if (ctx == nullptr) return {};
+
+  EVP_PKEY* pkey = nullptr;
+  if (ctx == nullptr || EVP_PKEY_fromdata_init(ctx) <= 0 ||
+      EVP_PKEY_fromdata(ctx, &pkey, EVP_PKEY_KEYPAIR, params) <= 0) {
+    EVP_PKEY_CTX_free(ctx);
+    return {};
+  }
+
+  return EVPKeyPointer(pkey);
+}
+#endif
+
 EVPKeyPointer EVPKeyPointer::NewDH(DHPointer&& dh) {
   if (!dh) return {};
   auto key = New();
@@ -1942,7 +1983,26 @@ EVP_PKEY* EVPKeyPointer::release() {
 
 int EVPKeyPointer::id(const EVP_PKEY* key) {
   if (key == nullptr) return 0;
-  return EVP_PKEY_id(key);
+  int type = EVP_PKEY_id(key);
+#if OPENSSL_WITH_PQC
+  // EVP_PKEY_id returns -1 when EVP_PKEY_* is only implemented in a provider
+  // which is the case for all post-quantum NIST algorithms
+  // one suggested way would be to use a chain of `EVP_PKEY_is_a`
+  // https://github.com/openssl/openssl/issues/27738#issuecomment-3013215870
+  // or, this way there are less calls to the OpenSSL provider, just
+  // getting the name once
+  if (type == -1) {
+    const char* type_name = EVP_PKEY_get0_type_name(key);
+    if (type_name == nullptr) return -1;
+
+    for (const auto& mapping : pqc_mappings) {
+      if (strcmp(type_name, mapping.name) == 0) {
+        return mapping.nid;
+      }
+    }
+  }
+#endif
+  return type;
 }
 
 int EVPKeyPointer::base_id(const EVP_PKEY* key) {
@@ -1997,6 +2057,31 @@ DataPointer EVPKeyPointer::rawPublicKey() const {
   }
   return {};
 }
+
+#if OPENSSL_WITH_PQC
+DataPointer EVPKeyPointer::rawSeed() const {
+  if (!pkey_) return {};
+  switch (id()) {
+    case EVP_PKEY_ML_DSA_44:
+    case EVP_PKEY_ML_DSA_65:
+    case EVP_PKEY_ML_DSA_87:
+      break;
+    default:
+      unreachable();
+  }
+
+  size_t seed_len = 32;
+  if (auto data = DataPointer::Alloc(seed_len)) {
+    const Buffer<unsigned char> buf = data;
+    size_t len = data.size();
+    if (EVP_PKEY_get_octet_string_param(
+            get(), OSSL_PKEY_PARAM_ML_DSA_SEED, buf.data, len, &seed_len) != 1)
+      return {};
+    return data;
+  }
+  return {};
+}
+#endif
 
 DataPointer EVPKeyPointer::rawPrivateKey() const {
   if (!pkey_) return {};
@@ -2453,7 +2538,18 @@ bool EVPKeyPointer::isRsaVariant() const {
 bool EVPKeyPointer::isOneShotVariant() const {
   if (!pkey_) return false;
   int type = id();
-  return type == EVP_PKEY_ED25519 || type == EVP_PKEY_ED448;
+  switch (type) {
+    case EVP_PKEY_ED25519:
+    case EVP_PKEY_ED448:
+#if OPENSSL_WITH_PQC
+    case EVP_PKEY_ML_DSA_44:
+    case EVP_PKEY_ML_DSA_65:
+    case EVP_PKEY_ML_DSA_87:
+#endif
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool EVPKeyPointer::isSigVariant() const {
@@ -2831,6 +2927,7 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
 const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
 const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
 const Cipher Cipher::AES_256_KW = Cipher::FromNid(NID_id_aes256_wrap);
+const Cipher Cipher::CHACHA20_POLY1305 = Cipher::FromNid(NID_chacha20_poly1305);
 
 bool Cipher::isGcmMode() const {
   if (!cipher_) return false;
@@ -3547,7 +3644,6 @@ EVPKeyPointer EVPKeyCtxPointer::paramgen() const {
 bool EVPKeyCtxPointer::publicCheck() const {
   if (!ctx_) return false;
 #ifndef OPENSSL_IS_BORINGSSL
-  return EVP_PKEY_public_check(ctx_.get()) == 1;
 #if OPENSSL_VERSION_MAJOR >= 3
   return EVP_PKEY_public_check_quick(ctx_.get()) == 1;
 #else
@@ -4189,6 +4285,22 @@ DataPointer hashDigest(const Buffer<const unsigned char>& buf,
   }
 
   return data.resize(result_size);
+}
+
+DataPointer xofHashDigest(const Buffer<const unsigned char>& buf,
+                          const EVP_MD* md,
+                          size_t output_length) {
+  if (md == nullptr) return {};
+
+  EVPMDCtxPointer ctx = EVPMDCtxPointer::New();
+  if (!ctx) return {};
+  if (ctx.digestInit(md) != 1) {
+    return {};
+  }
+  if (ctx.digestUpdate(reinterpret_cast<const Buffer<const void>&>(buf)) != 1) {
+    return {};
+  }
+  return ctx.digestFinal(output_length);
 }
 
 // ============================================================================

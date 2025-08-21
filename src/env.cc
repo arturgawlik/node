@@ -784,7 +784,8 @@ Environment::Environment(IsolateData* isolate_data,
                          const std::vector<std::string>& exec_args,
                          const EnvSerializeInfo* env_info,
                          EnvironmentFlags::Flags flags,
-                         ThreadId thread_id)
+                         ThreadId thread_id,
+                         std::string_view thread_name)
     : isolate_(isolate),
       external_memory_accounter_(new ExternalMemoryAccounter()),
       isolate_data_(isolate_data),
@@ -811,7 +812,8 @@ Environment::Environment(IsolateData* isolate_data,
       flags_(flags),
       thread_id_(thread_id.id == static_cast<uint64_t>(-1)
                      ? AllocateEnvironmentThreadId().id
-                     : thread_id.id) {
+                     : thread_id.id),
+      thread_name_(thread_name) {
   if (!is_main_thread()) {
     // If this is a Worker thread, we can always safely use the parent's
     // Isolate's code cache because of the shared read-only heap.
@@ -892,18 +894,12 @@ Environment::Environment(IsolateData* isolate_data,
 
   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
           TRACING_CATEGORY_NODE1(environment)) != 0) {
-    auto traced_value = tracing::TracedValue::Create();
-    traced_value->BeginArray("args");
-    for (const std::string& arg : args) traced_value->AppendString(arg);
-    traced_value->EndArray();
-    traced_value->BeginArray("exec_args");
-    for (const std::string& arg : exec_args) traced_value->AppendString(arg);
-    traced_value->EndArray();
+    tracing::EnvironmentArgs traced_value(args, exec_args);
     TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                       "Environment",
                                       this,
                                       "args",
-                                      std::move(traced_value));
+                                      tracing::CastTracedValue(traced_value));
   }
 
   if (options_->permission) {
@@ -913,6 +909,7 @@ Environment::Environment(IsolateData* isolate_data,
     // unless explicitly allowed by the user
     if (!options_->allow_addons) {
       options_->allow_native_addons = false;
+      permission()->Apply(this, {"*"}, permission::PermissionScope::kAddon);
     }
     flags_ = flags_ | EnvironmentFlags::kNoCreateInspector;
     permission()->Apply(this, {"*"}, permission::PermissionScope::kInspector);

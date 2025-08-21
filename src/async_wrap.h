@@ -51,6 +51,7 @@ namespace node {
   V(HTTP2SETTINGS)                                                             \
   V(HTTPINCOMINGMESSAGE)                                                       \
   V(HTTPCLIENTREQUEST)                                                         \
+  V(LOCKS)                                                                     \
   V(JSSTREAM)                                                                  \
   V(JSUDPWRAP)                                                                 \
   V(MESSAGEPORT)                                                               \
@@ -78,6 +79,7 @@ namespace node {
   V(UDPWRAP)                                                                   \
   V(SIGINTWATCHDOG)                                                            \
   V(WORKER)                                                                    \
+  V(WORKERCPUUSAGE)                                                            \
   V(WORKERHEAPSNAPSHOT)                                                        \
   V(WORKERHEAPSTATISTICS)                                                      \
   V(WRITEWRAP)                                                                 \
@@ -176,6 +178,7 @@ class AsyncWrap : public BaseObject {
 
   void EmitDestroy(bool from_gc = false);
 
+  void EmitTraceAsyncStart() const;
   void EmitTraceEventBefore();
   static void EmitTraceEventAfter(ProviderType type, double async_id);
   void EmitTraceEventDestroy();

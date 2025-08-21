@@ -120,7 +120,7 @@ any global object; rather, it is bound before each run, just for that run.
 added: v5.7.0
 -->
 
-* {boolean|undefined}
+* Type: {boolean|undefined}
 
 When `cachedData` is supplied to create the `vm.Script`, this value will be set
 to either `true` or `false` depending on acceptance of the data by V8.
@@ -371,7 +371,7 @@ added:
   - v18.13.0
 -->
 
-* {string|undefined}
+* Type: {string|undefined}
 
 When the script is compiled from a source that contains a source map magic
 comment, this property will be set to the URL of the source map.
@@ -577,7 +577,7 @@ const contextifiedObject = vm.createContext({
 
 ### `module.error`
 
-* {any}
+* Type: {any}
 
 If the `module.status` is `'errored'`, this property contains the exception
 thrown by the module during evaluation. If the status is anything else,
@@ -618,7 +618,7 @@ Record][]s in the ECMAScript specification.
 
 ### `module.identifier`
 
-* {string}
+* Type: {string}
 
 The identifier of the current module, as set in the constructor.
 
@@ -693,7 +693,7 @@ Record][]s in the ECMAScript specification.
 
 ### `module.namespace`
 
-* {Object}
+* Type: {Object}
 
 The namespace object of the module. This is only available after linking
 (`module.link()`) has completed.
@@ -703,7 +703,7 @@ specification.
 
 ### `module.status`
 
-* {string}
+* Type: {string}
 
 The current status of the module. Will be one of:
 
@@ -883,14 +883,14 @@ const module2 = new vm.SourceTextModule('const a = 1;', { cachedData });
 
 <!-- YAML
 changes:
-  - version: REPLACEME
+  - version: v24.4.0
     pr-url: https://github.com/nodejs/node/pull/20300
     description: This is deprecated in favour of `sourceTextModule.moduleRequests`.
 -->
 
 > Stability: 0 - Deprecated: Use [`sourceTextModule.moduleRequests`][] instead.
 
-* {string\[]}
+* Type: {string\[]}
 
 The specifiers of all dependencies of this module. The returned array is frozen
 to disallow any changes to it.
@@ -901,10 +901,10 @@ the ECMAScript specification.
 ### `sourceTextModule.moduleRequests`
 
 <!-- YAML
-added: REPLACEME
+added: v24.4.0
 -->
 
-* {ModuleRequest\[]} Dependencies of this module.
+* Type: {ModuleRequest\[]} Dependencies of this module.
 
 The requested import dependencies of this module. The returned array is frozen
 to disallow any changes to it.
@@ -1054,10 +1054,10 @@ const vm = require('node:vm');
 ## Type: `ModuleRequest`
 
 <!-- YAML
-added: REPLACEME
+added: v24.4.0
 -->
 
-* {Object}
+* Type: {Object}
   * `specifier` {string} The specifier of the requested module.
   * `attributes` {Object} The `"with"` value passed to the
     [WithClause][] in a [ImportDeclaration][], or an empty object if no value was
@@ -1146,7 +1146,7 @@ added:
   - v20.12.0
 -->
 
-* {Object}
+* Type: {Object}
 
 Returns an object containing commonly used constants for VM operations.
 
@@ -1640,8 +1640,8 @@ console.log(`evalResult: '${evalResult}', localVar: '${localVar}'`);
 ```
 
 Because `vm.runInThisContext()` does not have access to the local scope,
-`localVar` is unchanged. In contrast, [`eval()`][] _does_ have access to the
-local scope, so the value `localVar` is changed. In this way
+`localVar` is unchanged. In contrast, a direct `eval()` call _does_ have access
+to the local scope, so the value `localVar` is changed. In this way
 `vm.runInThisContext()` is much like an [indirect `eval()` call][], e.g.
 `(0,eval)('code')`.
 
@@ -2041,10 +2041,10 @@ const { Script, SyntheticModule } = require('node:vm');
 [HostResolveImportedModule]: https://tc39.es/ecma262/#sec-hostresolveimportedmodule
 [ImportDeclaration]: https://tc39.es/ecma262/#prod-ImportDeclaration
 [Link() concrete method]: https://tc39.es/ecma262/#sec-moduledeclarationlinking
-[Module Record]: https://262.ecma-international.org/14.0/#sec-abstract-module-records
+[Module Record]: https://tc39.es/ecma262/#sec-abstract-module-records
 [Source Text Module Record]: https://tc39.es/ecma262/#sec-source-text-module-records
 [Support of dynamic `import()` in compilation APIs]: #support-of-dynamic-import-in-compilation-apis
-[Synthetic Module Record]: https://heycam.github.io/webidl/#synthetic-module-records
+[Synthetic Module Record]: https://tc39.es/ecma262/#sec-synthetic-module-records
 [V8 Embedder's Guide]: https://v8.dev/docs/embed#contexts
 [WithClause]: https://tc39.es/ecma262/#prod-WithClause
 [`ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG`]: errors.md#err_vm_dynamic_import_callback_missing_flag
@@ -2064,6 +2064,6 @@ const { Script, SyntheticModule } = require('node:vm');
 [`vm.runInContext()`]: #vmrunincontextcode-contextifiedobject-options
 [`vm.runInThisContext()`]: #vmruninthiscontextcode-options
 [contextified]: #what-does-it-mean-to-contextify-an-object
-[global object]: https://es5.github.io/#x15.1
-[indirect `eval()` call]: https://es5.github.io/#x10.4.2
+[global object]: https://tc39.es/ecma262/#sec-global-object
+[indirect `eval()` call]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#direct_and_indirect_eval
 [origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin

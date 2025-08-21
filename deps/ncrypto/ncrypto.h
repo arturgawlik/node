@@ -28,6 +28,15 @@
 #include <openssl/fips.h>
 #endif  // OPENSSL_FIPS
 
+// Define OPENSSL_WITH_PQC for post-quantum cryptography support
+#if OPENSSL_VERSION_NUMBER >= 0x30500000L
+#define OPENSSL_WITH_PQC 1
+#define EVP_PKEY_ML_KEM_512 NID_ML_KEM_512
+#define EVP_PKEY_ML_KEM_768 NID_ML_KEM_768
+#define EVP_PKEY_ML_KEM_1024 NID_ML_KEM_1024
+#include <openssl/core_names.h>
+#endif
+
 #if OPENSSL_VERSION_MAJOR >= 3
 #define OSSL3_CONST const
 #else
@@ -278,8 +287,13 @@ class Digest final {
   const EVP_MD* md_ = nullptr;
 };
 
+// Computes a fixed-length digest.
 DataPointer hashDigest(const Buffer<const unsigned char>& data,
                        const EVP_MD* md);
+// Computes a variable-length digest for XOF algorithms (e.g. SHAKE128).
+DataPointer xofHashDigest(const Buffer<const unsigned char>& data,
+                          const EVP_MD* md,
+                          size_t length);
 
 class Cipher final {
  public:
@@ -359,6 +373,7 @@ class Cipher final {
   static const Cipher AES_128_KW;
   static const Cipher AES_192_KW;
   static const Cipher AES_256_KW;
+  static const Cipher CHACHA20_POLY1305;
 
   struct CipherParams {
     int padding;
@@ -812,6 +827,10 @@ class EVPKeyPointer final {
                                     const Buffer<const unsigned char>& data);
   static EVPKeyPointer NewRawPrivate(int id,
                                      const Buffer<const unsigned char>& data);
+#if OPENSSL_WITH_PQC
+  static EVPKeyPointer NewRawSeed(int id,
+                                  const Buffer<const unsigned char>& data);
+#endif
   static EVPKeyPointer NewDH(DHPointer&& dh);
   static EVPKeyPointer NewRSA(RSAPointer&& rsa);
 
@@ -904,6 +923,10 @@ class EVPKeyPointer final {
   DataPointer rawPublicKey() const;
   DataPointer rawPrivateKey() const;
   BIOPointer derPublicKey() const;
+
+#if OPENSSL_WITH_PQC
+  DataPointer rawSeed() const;
+#endif
 
   Result<BIOPointer, bool> writePrivateKey(
       const PrivateKeyEncodingConfig& config) const;
