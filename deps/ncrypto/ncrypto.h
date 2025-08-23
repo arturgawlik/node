@@ -1557,6 +1557,57 @@ DataPointer pbkdf2(const Digest& md,
                    uint32_t iterations,
                    size_t length);
 
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
+#ifndef OPENSSL_NO_ARGON2
+enum class Argon2Type { ARGON2D, ARGON2I, ARGON2ID };
+
+DataPointer argon2(const Buffer<const char>& pass,
+                   const Buffer<const unsigned char>& salt,
+                   uint32_t lanes,
+                   size_t length,
+                   uint32_t memcost,
+                   uint32_t iter,
+                   uint32_t version,
+                   const Buffer<const unsigned char>& secret,
+                   const Buffer<const unsigned char>& ad,
+                   Argon2Type type);
+#endif
+#endif
+
+// ============================================================================
+// KEM (Key Encapsulation Mechanism)
+#if OPENSSL_VERSION_MAJOR >= 3
+
+class KEM final {
+ public:
+  struct EncapsulateResult {
+    DataPointer ciphertext;
+    DataPointer shared_key;
+
+    EncapsulateResult() = default;
+    EncapsulateResult(DataPointer ct, DataPointer sk)
+        : ciphertext(std::move(ct)), shared_key(std::move(sk)) {}
+  };
+
+  // Encapsulate a shared secret using KEM with a public key.
+  // Returns both the ciphertext and shared secret.
+  static std::optional<EncapsulateResult> Encapsulate(
+      const EVPKeyPointer& public_key);
+
+  // Decapsulate a shared secret using KEM with a private key and ciphertext.
+  // Returns the shared secret.
+  static DataPointer Decapsulate(const EVPKeyPointer& private_key,
+                                 const Buffer<const void>& ciphertext);
+
+ private:
+#if !OPENSSL_VERSION_PREREQ(3, 5)
+  static bool SetOperationParameter(EVP_PKEY_CTX* ctx,
+                                    const EVPKeyPointer& key);
+#endif
+};
+
+#endif  // OPENSSL_VERSION_MAJOR >= 3
+
 // ============================================================================
 // Version metadata
 #define NCRYPTO_VERSION "0.0.1"

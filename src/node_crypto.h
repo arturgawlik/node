@@ -29,6 +29,7 @@
 // remains for convenience for any code that still imports it. New
 // code should include the relevant src/crypto headers directly.
 #include "crypto/crypto_aes.h"
+#include "crypto/crypto_argon2.h"
 #include "crypto/crypto_bio.h"
 #include "crypto/crypto_chacha20_poly1305.h"
 #include "crypto/crypto_cipher.h"
@@ -39,6 +40,9 @@
 #include "crypto/crypto_hash.h"
 #include "crypto/crypto_hkdf.h"
 #include "crypto/crypto_hmac.h"
+#if OPENSSL_VERSION_MAJOR >= 3
+#include "crypto/crypto_kem.h"
+#endif
 #include "crypto/crypto_keygen.h"
 #include "crypto/crypto_keys.h"
 #include "crypto/crypto_ml_dsa.h"

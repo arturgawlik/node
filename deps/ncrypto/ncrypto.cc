@@ -10,7 +10,12 @@
 #include <algorithm>
 #include <cstring>
 #if OPENSSL_VERSION_MAJOR >= 3
+#include <openssl/core_names.h>
+#include <openssl/params.h>
 #include <openssl/provider.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
+#include <openssl/thread.h>
+#endif
 #endif
 #if OPENSSL_WITH_PQC
 struct PQCMapping {
@@ -1867,6 +1872,102 @@ DataPointer pbkdf2(const Digest& md,
 
   return {};
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x30200000L
+#ifndef OPENSSL_NO_ARGON2
+DataPointer argon2(const Buffer<const char>& pass,
+                   const Buffer<const unsigned char>& salt,
+                   uint32_t lanes,
+                   size_t length,
+                   uint32_t memcost,
+                   uint32_t iter,
+                   uint32_t version,
+                   const Buffer<const unsigned char>& secret,
+                   const Buffer<const unsigned char>& ad,
+                   Argon2Type type) {
+  ClearErrorOnReturn clearErrorOnReturn;
+
+  std::string_view algorithm;
+  switch (type) {
+    case Argon2Type::ARGON2I:
+      algorithm = "ARGON2I";
+      break;
+    case Argon2Type::ARGON2D:
+      algorithm = "ARGON2D";
+      break;
+    case Argon2Type::ARGON2ID:
+      algorithm = "ARGON2ID";
+      break;
+    default:
+      // Invalid Argon2 type
+      return {};
+  }
+
+  // creates a new library context to avoid locking when running concurrently
+  auto ctx = DeleteFnPtr<OSSL_LIB_CTX, OSSL_LIB_CTX_free>{OSSL_LIB_CTX_new()};
+  if (!ctx) {
+    return {};
+  }
+
+  // required if threads > 1
+  if (lanes > 1 && OSSL_set_max_threads(ctx.get(), lanes) != 1) {
+    return {};
+  }
+
+  auto kdf = DeleteFnPtr<EVP_KDF, EVP_KDF_free>{
+      EVP_KDF_fetch(ctx.get(), algorithm.data(), nullptr)};
+  if (!kdf) {
+    return {};
+  }
+
+  auto kctx =
+      DeleteFnPtr<EVP_KDF_CTX, EVP_KDF_CTX_free>{EVP_KDF_CTX_new(kdf.get())};
+  if (!kctx) {
+    return {};
+  }
+
+  std::vector<OSSL_PARAM> params;
+  params.reserve(9);
+
+  params.push_back(OSSL_PARAM_construct_octet_string(
+      OSSL_KDF_PARAM_PASSWORD,
+      const_cast<char*>(pass.len > 0 ? pass.data : ""),
+      pass.len));
+  params.push_back(OSSL_PARAM_construct_octet_string(
+      OSSL_KDF_PARAM_SALT, const_cast<unsigned char*>(salt.data), salt.len));
+  params.push_back(OSSL_PARAM_construct_uint32(OSSL_KDF_PARAM_THREADS, &lanes));
+  params.push_back(
+      OSSL_PARAM_construct_uint32(OSSL_KDF_PARAM_ARGON2_LANES, &lanes));
+  params.push_back(
+      OSSL_PARAM_construct_uint32(OSSL_KDF_PARAM_ARGON2_MEMCOST, &memcost));
+  params.push_back(OSSL_PARAM_construct_uint32(OSSL_KDF_PARAM_ITER, &iter));
+
+  if (ad.len != 0) {
+    params.push_back(OSSL_PARAM_construct_octet_string(
+        OSSL_KDF_PARAM_ARGON2_AD, const_cast<unsigned char*>(ad.data), ad.len));
+  }
+
+  if (secret.len != 0) {
+    params.push_back(OSSL_PARAM_construct_octet_string(
+        OSSL_KDF_PARAM_SECRET,
+        const_cast<unsigned char*>(secret.data),
+        secret.len));
+  }
+
+  params.push_back(OSSL_PARAM_construct_end());
+
+  auto dp = DataPointer::Alloc(length);
+  if (dp && EVP_KDF_derive(kctx.get(),
+                           reinterpret_cast<unsigned char*>(dp.get()),
+                           length,
+                           params.data()) == 1) {
+    return dp;
+  }
+
+  return {};
+}
+#endif
+#endif
 
 // ============================================================================
 
@@ -4408,5 +4509,126 @@ const Digest Digest::SHA512 = Digest(EVP_sha512());
 const Digest Digest::FromName(const char* name) {
   return ncrypto::getDigestByName(name);
 }
+
+// ============================================================================
+// KEM Implementation
+#if OPENSSL_VERSION_MAJOR >= 3
+#if !OPENSSL_VERSION_PREREQ(3, 5)
+bool KEM::SetOperationParameter(EVP_PKEY_CTX* ctx, const EVPKeyPointer& key) {
+  const char* operation = nullptr;
+
+  switch (EVP_PKEY_id(key.get())) {
+    case EVP_PKEY_RSA:
+      operation = OSSL_KEM_PARAM_OPERATION_RSASVE;
+      break;
+#if OPENSSL_VERSION_PREREQ(3, 2)
+    case EVP_PKEY_EC:
+    case EVP_PKEY_X25519:
+    case EVP_PKEY_X448:
+      operation = OSSL_KEM_PARAM_OPERATION_DHKEM;
+      break;
+#endif
+    default:
+      unreachable();
+  }
+
+  if (operation != nullptr) {
+    OSSL_PARAM params[] = {
+        OSSL_PARAM_utf8_string(
+            OSSL_KEM_PARAM_OPERATION, const_cast<char*>(operation), 0),
+        OSSL_PARAM_END};
+
+    if (EVP_PKEY_CTX_set_params(ctx, params) <= 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+#endif
+
+std::optional<KEM::EncapsulateResult> KEM::Encapsulate(
+    const EVPKeyPointer& public_key) {
+  ClearErrorOnReturn clear_error_on_return;
+
+  auto ctx = public_key.newCtx();
+  if (!ctx) return std::nullopt;
+
+  if (EVP_PKEY_encapsulate_init(ctx.get(), nullptr) <= 0) {
+    return std::nullopt;
+  }
+
+#if !OPENSSL_VERSION_PREREQ(3, 5)
+  if (!SetOperationParameter(ctx.get(), public_key)) {
+    return std::nullopt;
+  }
+#endif
+
+  // Determine output buffer sizes
+  size_t ciphertext_len = 0;
+  size_t shared_key_len = 0;
+
+  if (EVP_PKEY_encapsulate(
+          ctx.get(), nullptr, &ciphertext_len, nullptr, &shared_key_len) <= 0) {
+    return std::nullopt;
+  }
+
+  auto ciphertext = DataPointer::Alloc(ciphertext_len);
+  auto shared_key = DataPointer::Alloc(shared_key_len);
+  if (!ciphertext || !shared_key) return std::nullopt;
+
+  if (EVP_PKEY_encapsulate(ctx.get(),
+                           static_cast<unsigned char*>(ciphertext.get()),
+                           &ciphertext_len,
+                           static_cast<unsigned char*>(shared_key.get()),
+                           &shared_key_len) <= 0) {
+    return std::nullopt;
+  }
+
+  return EncapsulateResult(std::move(ciphertext), std::move(shared_key));
+}
+
+DataPointer KEM::Decapsulate(const EVPKeyPointer& private_key,
+                             const Buffer<const void>& ciphertext) {
+  ClearErrorOnReturn clear_error_on_return;
+
+  auto ctx = private_key.newCtx();
+  if (!ctx) return {};
+
+  if (EVP_PKEY_decapsulate_init(ctx.get(), nullptr) <= 0) {
+    return {};
+  }
+
+#if !OPENSSL_VERSION_PREREQ(3, 5)
+  if (!SetOperationParameter(ctx.get(), private_key)) {
+    return {};
+  }
+#endif
+
+  // First pass: determine shared secret size
+  size_t shared_key_len = 0;
+  if (EVP_PKEY_decapsulate(ctx.get(),
+                           nullptr,
+                           &shared_key_len,
+                           static_cast<const unsigned char*>(ciphertext.data),
+                           ciphertext.len) <= 0) {
+    return {};
+  }
+
+  auto shared_key = DataPointer::Alloc(shared_key_len);
+  if (!shared_key) return {};
+
+  if (EVP_PKEY_decapsulate(ctx.get(),
+                           static_cast<unsigned char*>(shared_key.get()),
+                           &shared_key_len,
+                           static_cast<const unsigned char*>(ciphertext.data),
+                           ciphertext.len) <= 0) {
+    return {};
+  }
+
+  return shared_key;
+}
+
+#endif  // OPENSSL_VERSION_MAJOR >= 3
 
 }  // namespace ncrypto
