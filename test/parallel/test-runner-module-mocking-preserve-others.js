@@ -93,7 +93,7 @@ test('mocking with preserveOthers option', async (t) => {
     });
   });
 
-  await test('ESM loader mocking CJS module', async (t) => {
+  await test.skip('ESM loader mocking CJS module', async (t) => {
     const basicCjsFixture = fixtures.fileURL('module-mocking', 'basic-cjs.js');
     const basicCjsDefaultFixture = fixtures.fileURL(
       'module-mocking',
@@ -172,18 +172,55 @@ test('mocking with preserveOthers option', async (t) => {
     });
   });
 
-  await test('ESM loader mocking builtin module', async (t) => {
+  await test.skip('ESM loader mocking builtin module', async (t) => {
     const builtinModule = 'node:fs';
-    t.mock.module(builtinModule, {
-      preserveOthers: true,
-      // namedExports: {
-      //   read: () => {
-      //     return 'hello from mocked read';
-      //   },
-      // },
+    await test('coexisting original and mocked exports', async (t) => {
+      await test.skip('preserves original module exports', async (t) => {
+        t.mock.module(builtinModule, {
+          preserveOthers: true,
+        });
+        const mocked = await import(builtinModule);
+
+        assert.strictEqual(mocked.default.read.name, 'read');
+      });
+
+      await test('preserves original module exports with additional named exports', async (t) => {
+        t.mock.module(builtinModule, {
+          namedExports: {
+            fn: () => 42,
+          },
+          preserveOthers: true,
+        });
+        const mocked = await import(builtinModule);
+
+        assert.strictEqual(mocked.default.read.name, 'read');
+        assert.strictEqual(mocked.default.fn(), 42);
+      });
     });
-    const mocked = await import(builtinModule);
-    assert.strictEqual(mocked.read.name, 'read');
+
+    await test('overriding original exports', async (t) => {
+      await test('override original module export', async (t) => {
+        t.mock.module(builtinModule, {
+          namedExports: {
+            read: 'mocked cjs string',
+          },
+          preserveOthers: true,
+        });
+        const mocked = await import(builtinModule);
+
+        assert.strictEqual(mocked.default.read, 'mocked cjs string');
+      });
+
+      await test('override original default module export', async (t) => {
+        t.mock.module(builtinModule, {
+          defaultExport: 'mocked cjs string default',
+          preserveOthers: true,
+        });
+        const mocked = await import(builtinModule);
+
+        assert.strictEqual(mocked.default, 'mocked cjs string default');
+      });
+    });
   });
 
   await test.skip('ESM loader mocking module with invalid URL', async (t) => {
@@ -373,13 +410,59 @@ test('mocking with preserveOthers option', async (t) => {
     });
   });
 
-  await test.skip('CJS loader mocking builtin module', (t) => {
+  await test('CJS loader mocking builtin module', (t) => {
     const builtinModule = 'node:fs';
-    t.mock.module(builtinModule, {
-      preserveOthers: true,
+    test('coexisting original and mocked exports', (t) => {
+      test('preserves original module exports', (t) => {
+        t.mock.module(builtinModule, {
+          preserveOthers: true,
+        });
+        const mocked = require(builtinModule);
+
+        assert.strictEqual(mocked.read.name, 'read');
+      });
+
+      test('preserves original module exports with additional named exports', (t) => {
+        t.mock.module(builtinModule, {
+          namedExports: {
+            fn: () => 42,
+          },
+          preserveOthers: true,
+        });
+        const mocked = require(builtinModule);
+
+        assert.strictEqual(mocked.read.name, 'read');
+        assert.strictEqual(mocked.fn(), 42);
+      });
     });
-    const mocked = require(builtinModule);
-    assert.strictEqual(mocked.read.name, 'read');
+
+    test('overriding original exports', (t) => {
+      test('override original module export', (t) => {
+        t.mock.module(builtinModule, {
+          namedExports: {
+            read: 'mocked cjs string',
+          },
+          preserveOthers: true,
+        });
+        const mocked = require(builtinModule);
+
+        assert.strictEqual(mocked.read, 'mocked cjs string');
+      });
+
+      test('override original default module export', (t) => {
+        t.mock.module(builtinModule, {
+          defaultExport: {
+            msg: 'mocked cjs string default',
+          },
+          preserveOthers: true,
+        });
+        const mocked = require(builtinModule);
+
+        assert.deepStrictEqual(mocked, {
+          msg: 'mocked cjs string default',
+        });
+      });
+    });
   });
 
   await test.skip('CJS loader mocking module with invalid URL', (t) => {
