@@ -26,6 +26,7 @@
 
 #include "uv.h"
 #include "v8-inspector.h"
+#include "v8-profiler.h"
 #include "v8.h"
 
 #include "node.h"
@@ -45,6 +46,7 @@
 #include <optional>
 #include <ranges>
 #include <set>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -346,17 +348,19 @@ inline v8::Local<v8::String> OneByteString(v8::Isolate* isolate,
                                            std::string_view str);
 
 // Used to be a macro, hence the uppercase name.
-template <int N>
-inline v8::Local<v8::String> FIXED_ONE_BYTE_STRING(
-    v8::Isolate* isolate,
-    const char(&data)[N]) {
+template <std::size_t N>
+  requires(N > 0)
+inline v8::Local<v8::String> FIXED_ONE_BYTE_STRING(v8::Isolate* isolate,
+                                                   const char (&data)[N]) {
+  CHECK_EQ(data[N - 1], '\0');
   return OneByteString(isolate, data, N - 1);
 }
 
 template <std::size_t N>
+  requires(N > 0)
 inline v8::Local<v8::String> FIXED_ONE_BYTE_STRING(
-    v8::Isolate* isolate,
-    const std::array<char, N>& arr) {
+    v8::Isolate* isolate, const std::array<char, N>& arr) {
+  CHECK_EQ(arr[N - 1], '\0');
   return OneByteString(isolate, arr.data(), N - 1);
 }
 
@@ -1009,6 +1013,25 @@ v8::Maybe<int32_t> GetValidatedFd(Environment* env, v8::Local<v8::Value> input);
 v8::Maybe<int> GetValidFileMode(Environment* env,
                                 v8::Local<v8::Value> input,
                                 uv_fs_type type);
+
+class JSONOutputStream final : public v8::OutputStream {
+ public:
+  JSONOutputStream() = default;
+
+  int GetChunkSize() override { return 65536; }
+
+  void EndOfStream() override {}
+
+  WriteResult WriteAsciiChunk(char* data, const int size) override {
+    out_stream_.write(data, size);
+    return kContinue;
+  }
+
+  std::ostringstream& out_stream() { return out_stream_; }
+
+ private:
+  std::ostringstream out_stream_;
+};
 
 #ifdef _WIN32
 // Returns true if OS==Windows and filename ends in .bat or .cmd,
