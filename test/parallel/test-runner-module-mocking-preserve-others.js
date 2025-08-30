@@ -213,7 +213,6 @@ test('mocking with preserveOthers option', async (t) => {
     });
 
     await test('overriding original exports', async (t) => {
-      // TODO: if this test is enabled then CJS mocking original module tests do not pass
       await test('override original module export', async (t) => {
         const mock = t.mock.module(builtinModule, {
           namedExports: {
@@ -238,18 +237,6 @@ test('mocking with preserveOthers option', async (t) => {
         mock.restore();
       });
     });
-  });
-
-  await test.skip('ESM loader mocking module with invalid URL', async (t) => {
-    // TODO this test
-    // this maybe involves some URL that is e.g. custom resolved by some hook??
-    const invalidUrl = 'some-invalid-url';
-    const mock = t.mock.module(invalidUrl, {
-      preserveOthers: true,
-    });
-    const mocked = await import(invalidUrl);
-    assert.strictEqual(mocked.read.name, 'read');
-    mock.restore();
   });
 
   await test('CJS loader mocking CJS module', async (t) => {
@@ -498,17 +485,5 @@ test('mocking with preserveOthers option', async (t) => {
         mock.restore();
       });
     });
-  });
-
-  await test.skip('CJS loader mocking module with invalid URL', (t) => {
-    // TODO this test
-    // this maybe involves some URL that is e.g. custom resolved by some hook??
-    const invalidUrl = 'some-invalid-url';
-    const mock = t.mock.module(invalidUrl, {
-      preserveOthers: true,
-    });
-    const mocked = require(invalidUrl);
-    assert.strictEqual(mocked.read.name, 'read');
-    mock.restore();
   });
 });
